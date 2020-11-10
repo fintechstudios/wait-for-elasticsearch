@@ -31,12 +31,12 @@ async function sleep(ms) {
  * Resolve a promise when Elasticsearch on the given host is ready to use.
  *
  * @async
- * @param {string} [host=process.env.ES_HOST] - elasticsearch host, e.g. http://es.example.com:9200
- * @param {number} [maxRetries=10] - times to try before rejecting the promise
- * @param {number} [msBetweenRetries=2000] - seconds to wait between retries
+ * @param {string} host - elasticsearch host, e.g. http://es.example.com:9200
+ * @param {number} maxRetries - times to try before rejecting the promise
+ * @param {number} msBetweenRetries - seconds to wait between retries
  * @return {Promise<string>} resolves to success message
  */
-async function waitForES({ host = process.env.ES_HOST, maxRetries = 10, msBetweenRetries = 2000 } = {}) {
+async function waitForES({ host, maxRetries, msBetweenRetries }) {
   console.debug(`Waiting for shards to settle on ${host}`);
   const start = new Date();
   for (let i = 0; i < maxRetries; i += 1) {
@@ -58,11 +58,17 @@ async function waitForES({ host = process.env.ES_HOST, maxRetries = 10, msBetwee
 
 
 if (require.main === module) {
-  waitForES({
-    host: process.argv[2],
-    maxRetries: process.argv[3],
-    msBetweenRetries: process.argv[4],
-  })
+  const [
+    host = process.env.ES_HOST,
+    maxRetries = 10,
+    msBetweenRetries = 2000,
+  ] = process.argv.slice(2);
+  
+  if (!host) {
+    throw new TypeError('must specify host in args or ES_HOST in env');
+  }
+  
+  waitForES({ host, maxRetries, msBetweenRetries })
     .then(out => console.log(out))
     .catch((err) => {
       console.error(err.message || err);
